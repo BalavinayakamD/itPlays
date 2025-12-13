@@ -41,6 +41,9 @@ src/build/
 # qtcreator
 .qtcreator
 
+#vscode generated files
+.vscode
+
 # Qt unit tests
 target_wrapper.*
 
