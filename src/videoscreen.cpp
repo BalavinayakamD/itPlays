@@ -1,10 +1,12 @@
 #include "videoscreen.h"
 
 #include <QVBoxLayout>
+#include <QKeyEvent>
 
 VideoScreen::VideoScreen(QWidget *parent)
     : QWidget{parent}
 {
+    setFocusPolicy(Qt::StrongFocus);
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     //Videos to edge to edge for minimalist design
@@ -28,4 +30,22 @@ void VideoScreen::playVideo(const QString &filePath)
 {
     m_player->setSource(QUrl::fromLocalFile(filePath));
     m_player->play();
+}
+
+void VideoScreen::togglePlay()
+{
+    if(m_player->playbackState() == QMediaPlayer::PlayingState)
+    {
+        m_player->pause();
+    }else{
+        m_player->play();
+    }
+}
+
+void VideoScreen::keyPressEvent(QKeyEvent *event){
+    if(event->key() == Qt::Key_Space || event->key() == Qt::Key_K){
+        togglePlay();
+    }else {
+        QWidget::keyPressEvent(event);
+    }
 }

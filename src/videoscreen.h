@@ -15,11 +15,15 @@ public:
 
     void playVideo(const QString &filePath);
 
+    void togglePlay();
+
 private:
     QMediaPlayer *m_player;
     QVideoWidget *m_video;
     QAudioOutput *m_audio;
 
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
 
 signals:
 };

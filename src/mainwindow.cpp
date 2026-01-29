@@ -2,6 +2,9 @@
 #include "./ui_mainwindow.h"
 
 #include "videoscreen.h"
+#include <QKeyEvent>
+#include <QKeyCombination>
+#include <QFileDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -9,17 +12,37 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    VideoScreen *m_player = new VideoScreen(this);
+    m_player = new VideoScreen(this);
 
     setCentralWidget(m_player);
 
-    this->setStyleSheet("background-color: grey");
+    this->setStyleSheet("background-color: black");
 
-    // m_player->playVideo("Provide path here");
 
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    if(event->keyCombination() == QKeyCombination(Qt::ControlModifier, Qt::Key_O))
+    {
+        QString fileName = QFileDialog::getOpenFileName(this, "Open Video", QDir::homePath());
+        if (!fileName.isEmpty()) {
+            m_player->playVideo(fileName);
+        }
+        return;
+    }
+    if(event->key() == Qt::Key_F || event->key() == Qt::Key_PageUp){
+        if(isFullScreen()){
+            showNormal();
+        }else{
+            showFullScreen();
+        }
+    }else {
+        QWidget::keyPressEvent(event);
+    }
 }

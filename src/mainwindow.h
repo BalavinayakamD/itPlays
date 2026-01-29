@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "videoscreen.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,7 +18,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void keyPressEvent(QKeyEvent *event) override;
+
+
 private:
+    VideoScreen *m_player;
     Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H
