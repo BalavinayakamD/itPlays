@@ -26,6 +26,7 @@ public:
      * Default: 5000ms (5 seconds)
      */
     int seekOffset = 5000;
+    float volumeOffset = 0.2;
 };
 
 #endif // PLAYERSTATE_H

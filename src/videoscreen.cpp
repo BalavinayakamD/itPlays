@@ -7,7 +7,7 @@
 
 #include <QVBoxLayout>
 #include <QKeyEvent>
-
+#include <QMediaMetaData>
 /**
  * @brief Constructs the video screen and initializes multimedia components.
  * @param state Pointer to shared player state.
@@ -37,6 +37,15 @@ VideoScreen::VideoScreen(PlayerState *state, QWidget *parent)
     // Connect player to video and audio outputs
     m_player->setVideoOutput(m_video);
     m_player->setAudioOutput(m_audio);
+
+    // Log when tracks become available (subtitles load asynchronously)
+    connect(m_player, &QMediaPlayer::tracksChanged, this, [this]()
+            {
+        auto subs = m_player->subtitleTracks();
+        qDebug() << "Tracks changed — subtitle tracks available:" << subs.size();
+        for (int i = 0; i < subs.size(); ++i)
+            qDebug() << "  [" << i << "]" << subs[i].stringValue(QMediaMetaData::Language)
+                     << subs[i].stringValue(QMediaMetaData::Title); });
 }
 
 /**
@@ -69,19 +78,64 @@ void VideoScreen::togglePlay()
  * @brief Seeks the playback position by a relative offset.
  * @param offset Time offset in milliseconds.
  */
-void VideoScreen::seekBy(qint64 offset)
+void VideoScreen::seekBy(qint64 seekOffset)
 {
     // Calculate new position and apply it
-    int newPos = m_player->position() + offset;
+    qint64 newPos = m_player->position() + seekOffset;
     m_player->setPosition(newPos);
 }
 
+void VideoScreen::setVolumeBy(float volumeOffset)
+{
+    float currentVolume = m_audio->volume();
+    m_audio->setVolume(currentVolume + volumeOffset);
+}
+
+void VideoScreen::cycleSubtitleTrack(bool shouldCycle)
+{
+    const auto tracks = m_player->subtitleTracks();
+    const int trackCount = tracks.size();
+
+    if (trackCount == 0)
+    {
+        qDebug() << "No subtitle tracks available (media may still be loading)";
+        return;
+    }
+
+    if (shouldCycle)
+    {
+        // Cycle: -1 → 0 → 1 → ... → (n-1) → -1
+        m_currentSubtitleTrack++;
+        if (m_currentSubtitleTrack >= trackCount)
+            m_currentSubtitleTrack = 0;
+    }
+    else
+    {
+        // Toggle: off → first track, on → off
+        m_currentSubtitleTrack = (m_currentSubtitleTrack == -1) ? 0 : -1;
+    }
+
+    qDebug() << "Subtitle track set to:" << m_currentSubtitleTrack
+             << "of" << trackCount << "available";
+
+    if (m_currentSubtitleTrack == -1)
+    {
+        // Qt 6: set to trackCount (out-of-range) to disable, or use -1
+        m_player->setActiveSubtitleTrack(-1);
+    }
+    else
+    {
+        m_player->setActiveSubtitleTrack(m_currentSubtitleTrack);
+    }
+}
 /**
  * @brief Handles keyboard shortcuts for playback control.
  * @param event The key press event.
  */
 void VideoScreen::keyPressEvent(QKeyEvent *event)
 {
+    // BASIC CONTROLS
+
     // Space or K: Toggle play/pause (K matches YouTube shortcut)
     if (event->key() == Qt::Key_Space || event->key() == Qt::Key_K)
     {
@@ -96,6 +150,27 @@ void VideoScreen::keyPressEvent(QKeyEvent *event)
     else if (event->key() == Qt::Key_Left)
     {
         seekBy(-m_state->seekOffset);
+    }
+    else if (event->key() == Qt::Key_Up)
+    {
+        setVolumeBy(m_state->volumeOffset);
+    }
+    else if (event->key() == Qt::Key_Down)
+    {
+        setVolumeBy(-m_state->volumeOffset);
+    }
+
+    // FEATURES
+
+    // Shift + S : This cycles subtitles if the subtitles are on , else this shows a toast
+    else if (event->keyCombination() == QKeyCombination(Qt::ShiftModifier, Qt::Key_S))
+    {
+        cycleSubtitleTrack(true);
+    }
+    // S : This toggles subtitles for the video
+    else if (event->key() == Qt::Key_S)
+    {
+        cycleSubtitleTrack(false);
     }
     // Pass unhandled events to the base class
     else

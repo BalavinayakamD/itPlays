@@ -49,13 +49,15 @@ public:
      * @brief Seeks the video by a relative offset.
      * @param offset Time offset in milliseconds (positive = forward, negative = backward).
      */
-    void seekBy(qint64 offset);
+    void seekBy(qint64 seekOffset);
+    void setVolumeBy(float volumeOffset);
 
 private:
-    QMediaPlayer *m_player; ///< Qt media player for video decoding
-    QVideoWidget *m_video;  ///< Widget for rendering video frames
-    QAudioOutput *m_audio;  ///< Audio output handler
-    PlayerState *m_state;   ///< Shared player configuration state
+    QMediaPlayer *m_player;          ///< Qt media player for video decoding
+    QVideoWidget *m_video;           ///< Widget for rendering video frames
+    QAudioOutput *m_audio;           ///< Audio output handler
+    PlayerState *m_state;            ///< Shared player configuration state
+    int m_currentSubtitleTrack = -1; ///< Current subtitle track index (-1 = off)
 
 protected:
     /**
@@ -72,7 +74,7 @@ protected:
     /**
      * @brief Cycles through available subtitle tracks.
      */
-    void cycleSubtitleTrack();
+    void cycleSubtitleTrack(bool shouldCycle);
 
 signals:
 };
