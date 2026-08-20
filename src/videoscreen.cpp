@@ -45,7 +45,30 @@ VideoScreen::VideoScreen(PlayerState *state, QWidget *parent)
         qDebug() << "Tracks changed — subtitle tracks available:" << subs.size();
         for (int i = 0; i < subs.size(); ++i)
             qDebug() << "  [" << i << "]" << subs[i].stringValue(QMediaMetaData::Language)
-                     << subs[i].stringValue(QMediaMetaData::Title); });
+                     << subs[i].stringValue(QMediaMetaData::Title);
+
+        if (subs.isEmpty())
+        {
+            m_currentSubtitleTrack = -1;
+            m_player->setActiveSubtitleTrack(-1);
+            return;
+        }
+
+        if (m_state->isSubtitlesOn)
+        {
+            if (m_currentSubtitleTrack < 0 || m_currentSubtitleTrack >= subs.size())
+                m_currentSubtitleTrack = m_lastSubtitleTrack;
+            if (m_currentSubtitleTrack < 0 || m_currentSubtitleTrack >= subs.size())
+                m_currentSubtitleTrack = 0;
+            m_lastSubtitleTrack = m_currentSubtitleTrack;
+            m_player->setActiveSubtitleTrack(m_currentSubtitleTrack);
+        }
+        else
+        {
+            m_currentSubtitleTrack = -1;
+            m_player->setActiveSubtitleTrack(-1);
+        }
+    });
 }
 
 /**
@@ -91,6 +114,36 @@ void VideoScreen::setVolumeBy(float volumeOffset)
     m_audio->setVolume(currentVolume + volumeOffset);
 }
 
+void VideoScreen::toggleSubtitles(bool isSubtitlesOn)
+{
+    m_state->isSubtitlesOn = isSubtitlesOn;
+
+    const auto tracks = m_player->subtitleTracks();
+    if (tracks.isEmpty())
+    {
+        m_currentSubtitleTrack = -1;
+        if (isSubtitlesOn)
+            emit subtitleToastRequested("No Subtitles to Load");
+        return;
+    }
+
+    if (isSubtitlesOn)
+    {
+        if (m_lastSubtitleTrack < 0 || m_lastSubtitleTrack >= tracks.size())
+            m_lastSubtitleTrack = 0;
+
+        m_currentSubtitleTrack = m_lastSubtitleTrack;
+        m_player->setActiveSubtitleTrack(m_currentSubtitleTrack);
+    }
+    else
+    {
+        if (m_currentSubtitleTrack >= 0 && m_currentSubtitleTrack < tracks.size())
+            m_lastSubtitleTrack = m_currentSubtitleTrack;
+        m_currentSubtitleTrack = -1;
+        m_player->setActiveSubtitleTrack(-1);
+    }
+}
+
 void VideoScreen::cycleSubtitleTrack(bool shouldCycle)
 {
     const auto tracks = m_player->subtitleTracks();
@@ -99,20 +152,20 @@ void VideoScreen::cycleSubtitleTrack(bool shouldCycle)
     if (trackCount == 0)
     {
         qDebug() << "No subtitle tracks available (media may still be loading)";
+        emit subtitleToastRequested("No Subtitles to Load");
         return;
     }
 
     if (shouldCycle)
     {
+        if (m_currentSubtitleTrack == -1)
+            m_currentSubtitleTrack = m_lastSubtitleTrack;
+
         // Cycle: -1 → 0 → 1 → ... → (n-1) → -1
         m_currentSubtitleTrack++;
         if (m_currentSubtitleTrack >= trackCount)
             m_currentSubtitleTrack = 0;
-    }
-    else
-    {
-        // Toggle: off → first track, on → off
-        m_currentSubtitleTrack = (m_currentSubtitleTrack == -1) ? 0 : -1;
+        m_lastSubtitleTrack = m_currentSubtitleTrack;
     }
 
     qDebug() << "Subtitle track set to:" << m_currentSubtitleTrack
@@ -170,7 +223,7 @@ void VideoScreen::keyPressEvent(QKeyEvent *event)
     // S : This toggles subtitles for the video
     else if (event->key() == Qt::Key_S)
     {
-        cycleSubtitleTrack(false);
+        toggleSubtitles(!m_state->isSubtitlesOn);
     }
     // Pass unhandled events to the base class
     else

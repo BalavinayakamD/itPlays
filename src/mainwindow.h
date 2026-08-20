@@ -55,6 +55,9 @@ public:
     /** @brief Shared player state for configuration settings. */
     PlayerState state;
 
+private slots:
+    void showToast(const QString &message);
+
 private:
     VideoScreen *m_player; ///< The video screen widget for playback
     Ui::MainWindow *ui;    ///< Pointer to the UI form

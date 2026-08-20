@@ -27,6 +27,7 @@ public:
      */
     int seekOffset = 5000;
     float volumeOffset = 0.2;
+    bool isSubtitlesOn = false;
 };
 
 #endif // PLAYERSTATE_H

@@ -58,6 +58,7 @@ private:
     QAudioOutput *m_audio;           ///< Audio output handler
     PlayerState *m_state;            ///< Shared player configuration state
     int m_currentSubtitleTrack = -1; ///< Current subtitle track index (-1 = off)
+    int m_lastSubtitleTrack = 0;     ///< Last active subtitle track to restore when toggling back on
 
 protected:
     /**
@@ -75,8 +76,10 @@ protected:
      * @brief Cycles through available subtitle tracks.
      */
     void cycleSubtitleTrack(bool shouldCycle);
+    void toggleSubtitles(bool isSubtitlesOn);
 
 signals:
+    void subtitleToastRequested(const QString &message);
 };
 
 #endif // VIDEOSCREEN_H

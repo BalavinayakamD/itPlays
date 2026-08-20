@@ -7,6 +7,8 @@
 #include "./ui_mainwindow.h"
 
 #include "videoscreen.h"
+#include <QLabel>
+#include <QTimer>
 #include <QKeyEvent>
 #include <QKeyCombination>
 #include <QFileDialog>
@@ -23,8 +25,11 @@ MainWindow::MainWindow(QWidget *parent)
     // Create the video screen widget with shared player state
     m_player = new VideoScreen(&state, this);
 
+    connect(m_player, &VideoScreen::subtitleToastRequested, this, &MainWindow::showToast);
+
     // Set video screen as the central widget (fills the window)
     setCentralWidget(m_player);
+    m_player->setFocus();
 
     // Set black background for a cinema-like experience
     this->setStyleSheet("background-color: black");
@@ -72,4 +77,32 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         // Pass unhandled events to the base class
         QWidget::keyPressEvent(event);
     }
+}
+
+void MainWindow::showToast(const QString &message)
+{
+    QLabel *toast = new QLabel(this);
+    toast->setText(message);
+    toast->setAttribute(Qt::WA_DeleteOnClose);
+    toast->setAttribute(Qt::WA_TransparentForMouseEvents);
+    toast->setStyleSheet(
+        "QLabel {"
+        "   background-color: rgba(30, 30, 30, 230);"
+        "   color: white;"
+        "   padding: 10px 20px;"
+        "   border-radius: 8px;"
+        "   font-size: 16px;"
+        "}"
+    );
+
+    toast->setAlignment(Qt::AlignCenter);
+    toast->adjustSize();
+    toast->setGeometry((width() - toast->width()) / 2,
+                       height() - toast->height() - 30,
+                       toast->width(),
+                       toast->height());
+    toast->raise();
+    toast->show();
+
+    QTimer::singleShot(2000, toast, &QLabel::deleteLater);
 }
